@@ -1,0 +1,6 @@
+branch_id,branch_name,region,country,load_run_id,source_system,processed_at
+10,Central Branch,Absheron,Azerbaijan,RUN_2026_09_20_01,POSTGRES_OLTP,2026-09-20 22:46:16
+20,Ganja Branch,Ganja-Dashkasan,Azerbaijan,RUN_2026_09_20_01,POSTGRES_OLTP,2026-09-20 22:46:16
+30,Sumqayit Branch,Absheron,Azerbaijan,RUN_2026_09_20_01,POSTGRES_OLTP,2026-09-20 22:46:16
+40,Shaki Branch,Shaki-Zaqatala,Azerbaijan,RUN_2026_09_20_01,POSTGRES_OLTP,2026-09-20 22:46:16
+50,Lankaran Branch,Lankaran-Astara,Azerbaijan,RUN_2026_09_20_01,POSTGRES_OLTP,2026-09-20 22:46:16

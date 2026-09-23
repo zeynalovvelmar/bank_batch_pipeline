@@ -1,0 +1,12 @@
+jars/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Airflow log faylları
+logs/
+
+# Spark warehouse
+spark-warehouse/
