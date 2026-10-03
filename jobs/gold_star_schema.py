@@ -78,7 +78,7 @@ def main():
     fact_tx.write.mode("overwrite").partitionBy("date_key").parquet(
         "s3a://gold/fact_transaction"
     )
-    print("[fact_transaction] hazırlandı və Gold qatına yazıldı!")
+    print("[fact_transaction] hazırlandı və Gold qatına yazıldi")
 
     spark.stop()
 

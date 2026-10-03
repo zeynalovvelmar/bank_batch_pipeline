@@ -92,5 +92,27 @@ services:
       - ./jars:/opt/spark/work-dir/jars
 
 
+  jupyter:
+    image: quay.io/jupyter/pyspark-notebook:x86_64-spark-3.5.2
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=admin
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./jars:/home/jovyan/jars
+      - ./data:/home/jovyan/data
+  frontend:
+    image: python:3.10-slim
+    command: bash -c "pip install streamlit pandas s3fs pyarrow && streamlit run /app/app.py --server.port 8501 --server.address 0.0.0.0"
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - minio
 volumes:
   minio_data:
+
+
