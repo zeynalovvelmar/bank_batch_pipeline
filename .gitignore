@@ -10,3 +10,6 @@ logs/
 
 # Spark warehouse
 spark-warehouse/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

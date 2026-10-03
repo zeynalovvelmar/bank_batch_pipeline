@@ -1,11 +1,13 @@
 # Bank Batch Pipeline
 
-Batch ETL pipeline implementing the **Medallion Architecture** (Bronze → Silver → Gold) for simulated banking data using Apache Spark, MinIO, and Apache Airflow.
+Batch ETL pipeline implementing the **Medallion Architecture** (Bronze → Silver → Gold) for simulated banking data using Apache Spark, MinIO, and Apache Airflow. Processed data can be explored through a Jupyter notebook and a Streamlit web interface.
 
 ## Architecture
 
 ```
 CSV (OLTP Simulation) → Bronze (Raw Parquet) → Silver (Cleansed) → Gold (Star Schema)
+                                                                         │
+                                                          Jupyter / Streamlit (Analytics)
 ```
 
 All layers are stored as Parquet in MinIO (S3-compatible object storage).
@@ -17,7 +19,8 @@ All layers are stored as Parquet in MinIO (S3-compatible object storage).
 | Orchestration | Apache Airflow 2.10.5 |
 | Processing | Apache Spark 3.5.2 (PySpark) |
 | Storage | MinIO |
-| Metadata DB | PostgreSQL 16 |
+| Metadata DB | PostgreSQL 16 (Airflow metadata) |
+| Analytics | Jupyter (PySpark), Streamlit |
 | Runtime | Docker Compose |
 
 ## Pipeline Stages
@@ -43,6 +46,11 @@ Builds a Kimball Star Schema with surrogate keys:
 - **`dim_account`**, **`dim_branch`**, **`dim_date`** — Conformed dimensions
 - **`fact_transaction`** — Time-aware join to historically correct customer record
 
+## Data Exploration
+
+- **Jupyter** (`notebooks/analytics.ipynb`) — reads Gold tables from MinIO with PySpark and runs analytical SQL queries.
+- **Streamlit** (`frontend/app.py`) — web interface to browse any table in the Bronze, Silver, or Gold layer.
+
 ## Project Structure
 
 ```
@@ -53,6 +61,10 @@ bank_batch_pipeline/
 │   ├── bronze_ingestion.py
 │   ├── silver_ingestion.py
 │   └── gold_star_schema.py
+├── notebooks/
+│   └── analytics.ipynb
+├── frontend/
+│   └── app.py
 ├── data/                        # 9 source CSV files
 ├── jars/                        # hadoop-aws & aws-sdk JARs (gitignored)
 ├── Dockerfile
@@ -68,11 +80,17 @@ bank_batch_pipeline/
 # 2. Start services
 docker compose up -d
 
-# 3. Create buckets in MinIO UI (localhost:9001) — bronze, silver, gold
+# 3. Create buckets in MinIO UI — bronze, silver, gold
 
-# 4. Trigger pipeline in Airflow UI (localhost:8080)
-#    DAG: bank_batch_pipeline
+# 4. Trigger the DAG "bank_batch_pipeline" in Airflow UI
 ```
 
-**Credentials:** Airflow `admin/admin` · MinIO `admin/password123`
+## Services
 
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Airflow | http://localhost:8080 | admin / admin |
+| MinIO Console | http://localhost:9001 | admin / password123 |
+| Spark Master | http://localhost:8081 | — |
+| Jupyter | http://localhost:8888 | token: admin |
+| Streamlit | http://localhost:8501 | — |
