@@ -6,7 +6,7 @@ def main():
         SparkSession.builder.appName("BronzeIngestion")
         .config(
             "spark.jars",
-            "/opt/spark/work-dir/jars/aws-java-sdk-bundle-1.12.262.jar,/opt/spark/work-dir/jars/hadoop-aws-3.3.4.jar",
+            "/opt/spark/work-dir/jars/aws-java-sdk-bundle-1.12.262.jar,/opt/spark/work-dir/jars/hadoop-aws-3.3.4.jar,/opt/spark/work-dir/jars/postgresql-42.7.3.jar",
         )
         .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000")
         .config("spark.hadoop.fs.s3a.access.key", "admin")
@@ -20,7 +20,6 @@ def main():
         .getOrCreate()
     )
 
-    input_dir = "/opt/spark/data"
     output_bucket = "s3a://bronze"
 
     tables = [
@@ -36,10 +35,16 @@ def main():
     ]
 
     for table in tables:
-        print(f"[{table}] cədvəli oxunur...")
-        csv_path = f"{input_dir}/{table}.csv"
-
-        df = spark.read.csv(csv_path, header=True, inferSchema=True)
+        print(f"[{table}] cədvəli Postgres (bank_oltp) bazasından oxunur...")
+        
+        df = spark.read \
+            .format("jdbc") \
+            .option("url", "jdbc:postgresql://bank-db:5432/bank_oltp") \
+            .option("dbtable", table) \
+            .option("user", "bank_user") \
+            .option("password", "bank_pass") \
+            .option("driver", "org.postgresql.Driver") \
+            .load()
 
         output_path = f"{output_bucket}/{table}"
 

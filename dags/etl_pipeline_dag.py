@@ -14,7 +14,7 @@ with DAG(
     schedule_interval=None,
     catchup=False,
 ) as dag:
-    jars = "/opt/spark/work-dir/jars/hadoop-aws-3.3.4.jar,/opt/spark/work-dir/jars/aws-java-sdk-bundle-1.12.262.jar"
+    jars = "/opt/spark/work-dir/jars/hadoop-aws-3.3.4.jar,/opt/spark/work-dir/jars/aws-java-sdk-bundle-1.12.262.jar,/opt/spark/work-dir/jars/postgresql-42.7.3.jar"
 
     bronze_task = BashOperator(
         task_id="ingest_to_bronze",

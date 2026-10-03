@@ -129,5 +129,17 @@ services:
     depends_on:
       - minio
 
+  bank-db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=bank_user
+      - POSTGRES_PASSWORD=bank_pass
+      - POSTGRES_DB=bank_oltp
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./data:/data
 volumes:
   minio_data:
+

@@ -1,16 +1,16 @@
 # Bank Batch Pipeline
 
-Batch ETL pipeline implementing the **Medallion Architecture** (Bronze → Silver → Gold) for simulated banking data using Apache Spark, MinIO, and Apache Airflow. Processed data can be explored through a Jupyter notebook and a Streamlit web interface.
+Enterprise-grade Batch ETL pipeline implementing the **Medallion Architecture** (Bronze → Silver → Gold) for banking data using Apache Spark, MinIO, and Apache Airflow. The pipeline extracts data from a live PostgreSQL (OLTP) database, processes it through Data Lake layers, and serves it for visualization via Jupyter and Streamlit.
 
 ## Architecture
 
-```
-CSV (OLTP Simulation) → Bronze (Raw Parquet) → Silver (Cleansed) → Gold (Star Schema)
-                                                                         │
-                                                          Jupyter / Streamlit (Analytics)
+```text
+PostgreSQL (OLTP) → Bronze (Raw Parquet) → Silver (Cleansed) → Gold (Star Schema)
+      │                                                                  │
+  (JDBC Extract)                                          Jupyter / Streamlit (Analytics)
 ```
 
-All layers are stored as Parquet in MinIO (S3-compatible object storage).
+Data in the Bronze, Silver, and Gold layers is stored in **MinIO** (S3-compatible object storage) in Parquet format.
 
 ## Tech Stack
 
@@ -18,17 +18,18 @@ All layers are stored as Parquet in MinIO (S3-compatible object storage).
 |-----------|------------|
 | Orchestration | Apache Airflow 2.10.5 |
 | Processing | Apache Spark 3.5.2 (PySpark) |
-| Storage | MinIO |
-| Metadata DB | PostgreSQL 16 (Airflow metadata) |
+| Storage | MinIO (Data Lake) |
+| Source OLTP DB | PostgreSQL 16 (`bank-db`) |
+| Metadata DB | PostgreSQL 16 (Airflow internal) |
 | Analytics | Jupyter (PySpark), Streamlit |
 | Runtime | Docker Compose |
 
 ## Pipeline Stages
 
-### Bronze — Raw Ingestion
-Reads 9 CSV tables and writes them as Parquet to `s3a://bronze/`. The `transactions` table is partitioned by `date_key`.
+### 1. Bronze — Raw Ingestion
+Connects to the live `bank-db` (PostgreSQL) operational database via **JDBC**. Extracts all 9 tables (transactions, customers, accounts, etc.) and writes them directly to `s3a://bronze/` in Parquet format. The `transactions` table is partitioned by `date_key`.
 
-### Silver — Data Quality
+### 2. Silver — Data Quality
 Applies schema enforcement and resolves 5 deliberate data defects in `transactions`:
 
 | Defect | Fix |
@@ -39,7 +40,7 @@ Applies schema enforcement and resolves 5 deliberate data defects in `transactio
 | Invalid currency (`XXX`) | Filtered out |
 | Orphan `account_id` (999) | Inner join with `accounts` |
 
-### Gold — Star Schema
+### 3. Gold — Star Schema
 Builds a Kimball Star Schema with surrogate keys:
 
 - **`dim_customer`** — SCD Type 2 (joins `customers` + `customer_history`)
@@ -48,42 +49,19 @@ Builds a Kimball Star Schema with surrogate keys:
 
 ## Data Exploration
 
-- **Jupyter** (`notebooks/analytics.ipynb`) — reads Gold tables from MinIO with PySpark and runs analytical SQL queries.
-- **Streamlit** (`frontend/app.py`) — web interface to browse any table in the Bronze, Silver, or Gold layer.
-
-## Project Structure
-
-```
-bank_batch_pipeline/
-├── dags/
-│   └── etl_pipeline_dag.py
-├── jobs/
-│   ├── bronze_ingestion.py
-│   ├── silver_ingestion.py
-│   └── gold_star_schema.py
-├── notebooks/
-│   └── analytics.ipynb
-├── frontend/
-│   └── app.py
-├── data/                        # 9 source CSV files
-├── jars/                        # hadoop-aws & aws-sdk JARs (gitignored)
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
-```
+- **Streamlit** (`frontend/app.py`) — A custom web UI to visually browse and filter any table across the Bronze, Silver, and Gold layers directly from S3.
+- **Jupyter** (`notebooks/analytics.ipynb`) — Pre-configured PySpark environment for running analytical SQL queries and aggregations on the Gold layer.
 
 ## Quick Start
 
 ```bash
-# 1. Place hadoop-aws-3.3.4.jar and aws-java-sdk-bundle-1.12.262.jar in jars/
-
-# 2. Start services
+# 1. Start all services (MinIO buckets and Postgres tables are auto-initialized)
 docker compose up -d
 
-# 3. Create buckets in MinIO UI — bronze, silver, gold
-
-# 4. Trigger the DAG "bank_batch_pipeline" in Airflow UI
+# 2. Open Airflow UI (localhost:8080) and trigger the "bank_batch_pipeline" DAG
 ```
+
+*Note: The `data/` folder contains CSV seed files that are automatically loaded into the PostgreSQL OLTP database on first boot via the `init_db.sql` script.*
 
 ## Services
 
@@ -92,5 +70,6 @@ docker compose up -d
 | Airflow | http://localhost:8080 | admin / admin |
 | MinIO Console | http://localhost:9001 | admin / password123 |
 | Spark Master | http://localhost:8081 | — |
-| Jupyter | http://localhost:8888 | token: admin |
-| Streamlit | http://localhost:8501 | — |
+| Streamlit UI | http://localhost:8501 | — |
+| Jupyter | http://localhost:8888 | token: `admin` |
+| PostgreSQL (OLTP) | `localhost:5433` | bank_user / bank_pass |
